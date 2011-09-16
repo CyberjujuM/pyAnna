@@ -15,10 +15,6 @@
 # along with this program; if not, see <http://www.gnu.org/licenses>.
 #
 
-from modules.talkative import Talkative
-from modules.whois import Whois
-from modules.bonjour import Bonjour
-
 class Room:
 	def __init__(self, xmpp, room, modules, botname):
 		self._xmpp = xmpp
@@ -33,16 +29,19 @@ class Room:
 	
 	def connect(self):
 		self._xmpp.plugin['xep_0045'].joinMUC(self._room, self._botname)
-		self._xmpp.add_event_handler("muc::%s::message" % self._room,
-											                               self.handle_message)
-
-		self._xmpp.add_event_handler("muc::%s::got_online" % self._room,
-																												 self.muc_online)
+		self._xmpp.add_event_handler("muc::%s::message" % self._room, self.handle_message)
+		self._xmpp.add_event_handler("muc::%s::got_online" % self._room, self.muc_online)
+		self._xmpp.add_event_handler("muc::%s::got_offline" % self._room, self.muc_offline)
 
 	def muc_online(self, presence):
 		if presence['muc']['nick'] != self._botname:
 			for module in self._modules:
 				module.muc_online(presence)
+	
+	def muc_offline(self, presence):
+		if presence['muc']['nick'] != self._botname:
+			for module in self._modules:
+				module.muc_offline(presence)
 
 	def handle_message(self, msg):
 		if msg['mucnick'] != self._botname:
@@ -67,12 +66,7 @@ class Room:
 		return self._botname
 
 	def send_message(self, message):
-		self._xmpp.send_message(mto=self._room,
-														mbody=message,
-														mtype='groupchat')
-
+		self._xmpp.send_message(mto=self._room, mbody=message, mtype='groupchat')
 
 	def send_private_message(self, message, to):
-		self._xmpp.send_message(mto=to,
-														mbody=message,
-														mtype='chat')
+		self._xmpp.send_message(mto=to, mbody=message, mtype='chat')
